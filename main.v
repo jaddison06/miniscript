@@ -31,20 +31,48 @@ mut:
 	saved bool
 	fname string
 
-	current_scene string = 'Scene One'
+	current_scene string
+
+	node int
+	offset int
 
 	tui &tui.Context = unsafe { nil }
 }
 
 fn (mut ctx Context) frame() {
-	// Top bar
+	// Top bar - draw last so it goes on top
 	ctx.tui.draw_text(1, 1, version)
 	ctx.tui.draw_text(ctx.tui.window_width / 2 - ctx.fname.len / 2, 1, ctx.fname)
 	ctx.tui.draw_text(ctx.tui.window_width - ctx.current_scene.len, 1, ctx.current_scene)
+
+	mut y := 2
+	for i in ctx.node..ctx.document.len {
+		// How do we do reliable drawing for dialogue w/ inline stage directions? Where's the responsibility?????
+	}
 }
 
 fn (mut ctx Context) event(e &tui.Event) {
 	if debug && e.typ == .key_down && e.code == .escape { exit(0) }
+}
+
+fn to_lines(width int, text string) []string {
+	mut out := []string{}
+	mut remainder := text
+	for remainder.len > width {
+		mut cut := width
+		for remainder[cut] != ` ` && cut != 0 { cut -= 1}
+		if cut == 0 {
+			// Splice
+			out << remainder[..width - 1] + '-'
+			remainder = remainder[width - 1..].trim_space()
+		} else {
+			out << remainder[..cut]
+			remainder = remainder[cut..].trim_space()
+		}
+	}
+	out << remainder.trim_space()
+
+	return out
 }
 
 fn new_context() &Context {
@@ -87,6 +115,7 @@ fn main() {
 		user_data: ctx
 		event_fn: event
 		frame_fn: frame
+		window_title: ctx.fname
 	)
 	ctx.tui.run()!
 }
